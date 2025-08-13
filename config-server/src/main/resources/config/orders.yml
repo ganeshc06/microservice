@@ -1,0 +1,11 @@
+build:
+  version: "3.0"
+
+loans:
+  message: "Welcome to Online Book Store Orders related local APIs "
+  contactDetails:
+    name: "Ganesh - Developer"
+    email: "ganesh@test.com"
+  onCallSupport:
+    - (452) 456-2176
+    - (546) 764-8934

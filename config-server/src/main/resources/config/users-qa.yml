@@ -1,0 +1,11 @@
+build:
+  version: "2.0"
+
+cards:
+  message: "Welcome to Online Book Store Users related QA APIs "
+  contactDetails:
+    name: "Ganesh Chauhan - QA Lead"
+    email: "ganesh@qa.com"
+  onCallSupport:
+    - (310) 875-4367
+    - (201) 236-1267

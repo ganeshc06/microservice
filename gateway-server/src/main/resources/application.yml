@@ -1,0 +1,168 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: "gateway-server"
+  config:
+    import: "optional:configserver:http://config:config@localhost:8888"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7080/realms/master
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 3s
+
+          # Default filters (apply to every route)
+          default-filters:
+            # Deduplicate CORS headers (set strategy explicitly)
+            - DedupeResponseHeader=Access-Control-Allow-Credentials RETAIN_FIRST
+            - DedupeResponseHeader=Access-Control-Allow-Origin RETAIN_FIRST
+            - PreserveHostHeader
+            # Remove framework-leak header (NOT hop-by-hop)
+            - RemoveResponseHeader=X-Application-Context
+            # Redis rate limiting (per user/IP via your key resolver)
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                deny-empty-key: true
+
+          # Global CORS (moved under server.webflux)
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: false
+
+          # Routes (moved under server.webflux)
+          routes:
+            - id: book-service
+              uri: lb://book-service
+              predicates:
+                - Path=/books/**
+              filters:
+                - RewritePath=/books/(?<segment>.*), /api/v1/books/${segment}
+                - CircuitBreaker=name=bookCB,fallbackUri=forward:/fallback/books
+                - name: Retry
+                  args:
+                    retries: 2
+                    series: [ SERVER_ERROR ]
+                    methods: [ GET ]
+                    backoff:
+                      firstBackoff: 200ms
+                      maxBackoff: 1s
+                      factor: 2
+                      basedOnPreviousValue: true
+                - RemoveRequestHeader=Cookie
+
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/users/**
+              filters:
+                - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
+                - CircuitBreaker=name=userCB,fallbackUri=forward:/fallback/users
+                - name: Retry
+                  args:
+                    retries: 2
+                    series: [ SERVER_ERROR ]
+                    methods: [ GET ]
+                    backoff:
+                      firstBackoff: 200ms
+                      maxBackoff: 1s
+                      factor: 2
+                      basedOnPreviousValue: true
+                - RemoveRequestHeader=Cookie
+
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/orders/**
+              filters:
+                - RewritePath=/orders/(?<segment>.*), /api/v1/orders/${segment}
+                - CircuitBreaker=name=orderCB,fallbackUri=forward:/fallback/orders
+                - name: Retry
+                  args:
+                    retries: 2
+                    series: [ SERVER_ERROR ]
+                    methods: [ GET, POST ]
+                    backoff:
+                      firstBackoff: 200ms
+                      maxBackoff: 1s
+                      factor: 2
+                      basedOnPreviousValue: true
+                - RemoveRequestHeader=Cookie
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    deny-empty-key: true
+
+  discovery:
+    locator:
+      enabled: false
+  loadbalancer:
+    retry:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    gateway:
+      access: unrestricted
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+info:
+  app:
+    name: "gateway-server"
+    description: "Gateway Server for Online Book Store microservices"
+    version: "1.0.0"
+
+logging:
+  level:
+    com:
+      v2solutions:
+        gateway-server: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
+
+# Eureka
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: http://eureka:eureka@localhost:8761/eureka/
+

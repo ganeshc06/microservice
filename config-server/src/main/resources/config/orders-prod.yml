@@ -1,0 +1,11 @@
+build:
+  version: "1.0"
+
+loans:
+  message: "Welcome to Online Book Store Orders related prod APIs "
+  contactDetails:
+    name: "Ganesh Chauhan - Product Owner"
+    email: "ganesh@v2solutions.com"
+  onCallSupport:
+    - (723) 656-8709
+    - (156) 342-0956

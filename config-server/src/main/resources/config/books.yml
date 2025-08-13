@@ -1,0 +1,11 @@
+build:
+  version: "3.0"
+
+accounts:
+  message: "Welcome to Online Book Store Books related local APIs "
+  contactDetails:
+    name: "Ganesh Chauhan - Developer"
+    email: "ganesh@test.com"
+  onCallSupport:
+    - (555) 555-1234
+    - (555) 523-1345

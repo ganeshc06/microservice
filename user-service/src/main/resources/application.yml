@@ -1,0 +1,121 @@
+server:
+  port: 8082
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ''
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7080/realms/master
+  config:
+    import: "optional:configserver:http://config:config@localhost:8888"
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    shutdown:
+      access: unrestricted
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+    com.v2solutions.user_service: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
+
+# External services (configure to call via gateway or direct)
+#clients:
+#  book-service:
+#    base-url: http://api-gateway/books # e.g., gateway route to book-service
+#  order-service:
+#    base-url: http://api-gateway/orders # e.g., gateway route to order-service
+#  http:
+#    connect-timeout-ms: 2000
+#    read-timeout-ms: 3000
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+  api-docs:
+    path: /v3/api-docs
+
+# Eureka
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: http://eureka:eureka@localhost:8761/eureka/
+
+info:
+  app:
+    name: "${spring.application.name}"
+    description: "Microservice for Users"
+    version: "1.0.0"
+
+# Resilience4j (via Spring Cloud CircuitBreaker)
+resilience4j:
+  circuitbreaker:
+    instances:
+      bookClient:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      orderClient:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  retry:
+    instances:
+      bookClient:
+        maxAttempts: 3
+        waitDuration: 200ms
+      orderClient:
+        waitDuration: 200ms

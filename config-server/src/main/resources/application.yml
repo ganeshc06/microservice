@@ -1,0 +1,66 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: "config-server"
+  profiles:
+    active: git
+  cloud:
+    config:
+      server:
+        # native:
+          # search-locations: "classpath:/config"
+        git:
+          uri: "https://github.com/ganeshc06/onlinebookstore-config.git"
+          # For HTTPS with PAT
+#          username: ${GIT_USERNAME:}
+#          password: ${GIT_PASSWORD:}
+          default-label: ${GIT_DEFAULT_LABEL:main}
+#          search-paths: ${GIT_SEARCH_PATHS:}
+          clone-on-start: ${GIT_CLONE_ON_START:true}
+          force-pull: ${GIT_FORCE_PULL:true}
+          # For SSH-based auth (alternate to username/password)
+#          ignoreLocalSshSettings: ${GIT_IGNORE_LOCAL_SSH:false}
+#          privateKey: ${GIT_SSH_PRIVATE_KEY:}
+#          hostKey: ${GIT_SSH_HOST_KEY:}
+#          hostKeyAlgorithm: ${GIT_SSH_HOST_KEY_ALGO:}
+#          strictHostKeyChecking: ${GIT_SSH_STRICT:true}
+  security:
+    user:
+      name: ${BASIC_AUTH_USER:config}
+      password: ${BASIC_AUTH_PASSWORD:config}
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: ${EUREKA_URL:http://eureka:eureka@localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+#encrypt:
+#  key: "45D81EC1EF61DF9AD8D3E5BB397F9"
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
