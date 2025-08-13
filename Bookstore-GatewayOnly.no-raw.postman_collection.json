@@ -1,0 +1,835 @@
+{
+  "info": {
+    "name": "Bookstore \u2013 Gateway-Only (No-raw URLs)",
+    "_postman_id": "0a03b13b-313a-4bd7-8bb8-061589f9efb2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "All requests via API Gateway. Every request.url is a simple string (no url.raw object)."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_base",
+      "value": "http://localhost:7080",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_realm",
+      "value": "master",
+      "type": "string"
+    },
+    {
+      "key": "client_id",
+      "value": "gateway-client",
+      "type": "string"
+    },
+    {
+      "key": "client_secret",
+      "value": "changeme",
+      "type": "string"
+    },
+    {
+      "key": "AUTH_STRATEGY",
+      "value": "client_credentials",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booksBase",
+      "value": "/books",
+      "type": "string"
+    },
+    {
+      "key": "usersBase",
+      "value": "/users",
+      "type": "string"
+    },
+    {
+      "key": "ordersBase",
+      "value": "/orders",
+      "type": "string"
+    },
+    {
+      "key": "configProxyBase",
+      "value": "/config",
+      "type": "string"
+    },
+    {
+      "key": "eurekaProxyBase",
+      "value": "/eureka",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "correlationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "isbn",
+      "value": "9780132350884",
+      "type": "string"
+    },
+    {
+      "key": "author",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appName",
+      "value": "BOOK-SERVICE",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}",
+          "let cid = pm.environment.get('correlationId');",
+          "if(!cid){ cid = uuidv4(); pm.environment.set('correlationId', cid);}",
+          "pm.request.headers.upsert({key:'X-Correlation-Id', value: cid});",
+          "const pathStr = pm.request.url && pm.request.url.getPath ? pm.request.url.getPath() : (pm.request.url || '').toString();",
+          "if (pm.request.method === 'POST' && (pathStr.includes('/orders') || pathStr.includes('/users/orders'))) {",
+          "  let idem = pm.environment.get('idempotencyKey');",
+          "  if(!idem){ idem = uuidv4(); pm.environment.set('idempotencyKey', idem);}",
+          "  pm.request.headers.upsert({key:'Idempotency-Key', value: idem});",
+          "}",
+          "const tokenUrl = pm.variables.replaceIn('{{keycloak_base}}/realms/{{keycloak_realm}}/protocol/openid-connect/token');",
+          "let tokenDataRaw = pm.environment.get('tokenData');",
+          "let tokenData = tokenDataRaw ? JSON.parse(tokenDataRaw) : null;",
+          "const now = Date.now();",
+          "function setAuthHeader(tok){ pm.environment.set('accessToken', tok); pm.request.headers.upsert({key:'Authorization', value: 'Bearer ' + tok}); }",
+          "let needToken = true;",
+          "if (tokenData && tokenData.access_token && tokenData.obtained_at && tokenData.expires_in){",
+          "  const exp = tokenData.obtained_at + (Math.max(0, tokenData.expires_in - 60) * 1000);",
+          "  if (now < exp){ needToken = false; setAuthHeader(tokenData.access_token); }",
+          "}",
+          "if (needToken){",
+          "  const authStrategy = (pm.environment.get('AUTH_STRATEGY') || 'client_credentials').toLowerCase();",
+          "  const body = [];",
+          "  if (authStrategy === 'password' && pm.environment.get('username')){",
+          "    body.push({key:'grant_type',value:'password'});",
+          "    body.push({key:'username',value:pm.environment.get('username')});",
+          "    body.push({key:'password',value:pm.environment.get('password')});",
+          "  } else {",
+          "    body.push({key:'grant_type',value:'client_credentials'});",
+          "  }",
+          "  body.push({key:'client_id',value:pm.environment.get('client_id')});",
+          "  if (pm.environment.get('client_secret')) body.push({key:'client_secret',value:pm.environment.get('client_secret')});",
+          "  pm.sendRequest({",
+          "    url: tokenUrl, method: 'POST', header:{'Content-Type':'application/x-www-form-urlencoded'},",
+          "    body:{mode:'urlencoded', urlencoded: body}",
+          "  }, function(err,res){",
+          "    if(!err && res){ const td = res.json(); td.obtained_at = Date.now(); pm.environment.set('tokenData', JSON.stringify(td)); setAuthHeader(td.access_token);}",
+          "  });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response < 2000 ms', function(){ pm.expect(pm.response.responseTime).to.be.below(2000); });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Access Token (manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{keycloak_base}}/realms/{{keycloak_realm}}/protocol/openid-connect/token",
+            "description": "Manual token fetch; pre-request usually handles this.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{client_secret}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token fetched', function(){ pm.response.to.have.status(200); });",
+                  "var td = pm.response.json(); td.obtained_at = Date.now(); pm.environment.set('tokenData', JSON.stringify(td)); pm.environment.set('accessToken', td.access_token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Gateway / Health",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/actuator/health",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Config (via Gateway)",
+      "item": [
+        {
+          "name": "Get user-service dev config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{configProxyBase}}/user-service/dev",
+            "description": "Fetch config via gateway."
+          },
+          "response": []
+        },
+        {
+          "name": "Get application default config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{configProxyBase}}/application/default",
+            "description": "Fetch shared defaults via gateway."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Eureka (via Gateway)",
+      "item": [
+        {
+          "name": "Apps",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{eurekaProxyBase}}/apps",
+            "description": "List registered apps via gateway."
+          },
+          "response": []
+        },
+        {
+          "name": "App by name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{eurekaProxyBase}}/apps/{{appName}}",
+            "description": "Get app by name via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Books (via Gateway)",
+      "item": [
+        {
+          "name": "List Books",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{booksBase}}?author={{author}}&page=0&size=20&sort=title,asc",
+            "description": "List books via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{booksBase}}",
+            "description": "Create book via gateway.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Clean Code\",\n  \"author\": \"Robert C. Martin\",\n  \"isbn\": \"9780132350884\",\n  \"price\": 39.99,\n  \"publishedDate\": \"2008-08-01\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created', function(){ pm.response.to.have.status(201); });",
+                  "var j = pm.response.json(); if (j.id) pm.environment.set('bookId', j.id); if (j.version!==undefined) pm.environment.set('bookVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{booksBase}}/{{bookId}}",
+            "description": "Get book via gateway by id."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });",
+                  "var j = pm.response.json(); if (j.version!==undefined) pm.environment.set('bookVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{bookVersion}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{booksBase}}/{{bookId}}",
+            "description": "Update book via gateway.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Clean Code (2nd Ed.)\",\n  \"author\": \"Robert C. Martin\",\n  \"isbn\": \"9780132350884\",\n  \"price\": 44.99,\n  \"publishedDate\": \"2008-08-01\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });",
+                  "var j = pm.response.json(); if (j.version!==undefined) pm.environment.set('bookVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{bookVersion}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{booksBase}}/{{bookId}}",
+            "description": "Delete book via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No Content', function(){ pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users (via Gateway)",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{usersBase}}?name=&page=0&size=20&sort=name,asc",
+            "description": "List users via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{usersBase}}",
+            "description": "Create user via gateway.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Example\",\n  \"email\": \"alice@example.com\",\n  \"mobile\": \"+1-555-0100\",\n  \"address\": \"42 Galaxy Way\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created', function(){ pm.response.to.have.status(201); });",
+                  "var j = pm.response.json(); if (j.id) pm.environment.set('userId', j.id); if (j.version!==undefined) pm.environment.set('userVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{usersBase}}/{{userId}}",
+            "description": "Get user by id via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });",
+                  "var j = pm.response.json(); if (j.version!==undefined) pm.environment.set('userVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{userVersion}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{usersBase}}/{{userId}}",
+            "description": "Update user via gateway.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Updated\",\n  \"email\": \"alice.updated@example.com\",\n  \"mobile\": \"+1-555-0101\",\n  \"address\": \"4242 Galaxy Way\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });",
+                  "var j = pm.response.json(); if (j.version!==undefined) pm.environment.set('userVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{userVersion}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{usersBase}}/{{userId}}",
+            "description": "Delete user via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No Content', function(){ pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place Order (via User)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{usersBase}}/orders",
+            "description": "Place order through User service via gateway (orchestrates books & orders).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"{{isbn}}\",\n  \"userId\": \"{{userId}}\",\n  \"quantity\": 2\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });",
+                  "var j = pm.response.json(); if (j.orderId) pm.environment.set('orderId', j.orderId);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Orders (via Gateway)",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{ordersBase}}?userId={{userId}}&page=0&size=20&sort=createdAt,desc",
+            "description": "List orders via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{ordersBase}}",
+            "description": "Create order via gateway.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"isbn\": \"{{isbn}}\",\n  \"quantity\": 2\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created', function(){ pm.response.to.have.status(201); });",
+                  "var j = pm.response.json(); if (j.id) pm.environment.set('orderId', j.id); if (j.version!==undefined) pm.environment.set('orderVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{ordersBase}}/{{orderId}}",
+            "description": "Get order via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });",
+                  "var j = pm.response.json(); if (j.version!==undefined) pm.environment.set('orderVersion', j.version.toString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{orderVersion}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{ordersBase}}/{{orderId}}",
+            "description": "Cancel order via gateway."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OK', function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
