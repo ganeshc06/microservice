@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/users")
 public class UserController {
     private final UserService service;
+    private UsersContactInfoDto usersContactInfoDto;
+
     public UserController(UserService service) { this.service = service; }
 
     @PostMapping
@@ -69,5 +72,12 @@ public class UserController {
                                          @RequestHeader(name = "X-Correlation-Id", required = false) String correlationId,
                                          @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
         return service.placeOrder(request, correlationId, idempotencyKey);
+    }
+
+    @GetMapping("/contact-info")
+    public ResponseEntity<UsersContactInfoDto> getContactInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(usersContactInfoDto);
     }
 }

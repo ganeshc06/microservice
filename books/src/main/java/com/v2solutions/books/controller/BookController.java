@@ -2,14 +2,17 @@ package com.v2solutions.books.controller;
 
 import com.v2solutions.books.dto.BookRequest;
 import com.v2solutions.books.dto.BookResponse;
+import com.v2solutions.books.dto.BooksContactInfoDto;
 import com.v2solutions.books.dto.PageResponse;
 import com.v2solutions.books.service.BookService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +21,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/books")
 public class BookController {
+
+    @Autowired
+    private BooksContactInfoDto booksContactInfoDto;
+
     private final BookService service;
     public BookController(BookService service) { this.service = service; }
 
@@ -68,5 +75,12 @@ public class BookController {
     @PreAuthorize("hasAnyAuthority('ROLE_books_read','ROLE_books_write','ROLE_books_admin')")
     public BookResponse getByIsbn(@RequestParam("isbn") String isbn) {
         return service.getByIsbn(isbn);
+    }
+
+    @GetMapping("/contact-info")
+    public ResponseEntity<BooksContactInfoDto> getContactInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(booksContactInfoDto);
     }
 }

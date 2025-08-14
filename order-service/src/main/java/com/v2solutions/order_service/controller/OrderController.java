@@ -1,6 +1,7 @@
 package com.v2solutions.order_service.controller;
 
 import com.v2solutions.order_service.dto.CreateOrderRequest;
+import com.v2solutions.order_service.dto.OrderContactInfoDto;
 import com.v2solutions.order_service.dto.OrderResponse;
 import com.v2solutions.order_service.dto.PageResponse;
 import com.v2solutions.order_service.service.OrderService;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/orders")
 public class OrderController {
     private final OrderService service;
+    private OrderContactInfoDto orderContactInfoDto;
+
     public OrderController(OrderService service) { this.service = service; }
 
     @PostMapping
@@ -54,5 +58,12 @@ public class OrderController {
     public OrderResponse cancel(@PathVariable UUID id,
                                 @RequestHeader(name = "If-Match", required = false) Long expectedVersion) {
         return service.cancel(id, expectedVersion);
+    }
+
+    @GetMapping("/contact-info")
+    public ResponseEntity<OrderContactInfoDto> getContactInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(orderContactInfoDto);
     }
 }
