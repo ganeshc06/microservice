@@ -6,6 +6,7 @@ import com.v2solutions.order_service.dto.OrderResponse;
 import com.v2solutions.order_service.dto.PageResponse;
 import com.v2solutions.order_service.service.OrderService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/orders")
 public class OrderController {
     private final OrderService service;
+
+    @Autowired
     private OrderContactInfoDto orderContactInfoDto;
 
     public OrderController(OrderService service) { this.service = service; }

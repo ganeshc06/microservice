@@ -22,10 +22,11 @@ import java.util.UUID;
 @RequestMapping("/api/v1/books")
 public class BookController {
 
+    private final BookService service;
+
     @Autowired
     private BooksContactInfoDto booksContactInfoDto;
 
-    private final BookService service;
     public BookController(BookService service) { this.service = service; }
 
     @PostMapping

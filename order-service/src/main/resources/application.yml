@@ -5,6 +5,8 @@ server:
 spring:
   application:
     name: order-service
+  profiles:
+    active: prod
   datasource:
     url: jdbc:postgresql://localhost:5432/books
     username: books

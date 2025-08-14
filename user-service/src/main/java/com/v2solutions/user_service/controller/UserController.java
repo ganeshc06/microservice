@@ -3,6 +3,7 @@ package com.v2solutions.user_service.controller;
 import com.v2solutions.user_service.dto.*;
 import com.v2solutions.user_service.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/users")
 public class UserController {
     private final UserService service;
+    @Autowired
     private UsersContactInfoDto usersContactInfoDto;
 
     public UserController(UserService service) { this.service = service; }
