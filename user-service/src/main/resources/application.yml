@@ -6,13 +6,9 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:h2:mem:testdb
-    driverClassName: org.h2.Driver
-    username: sa
-    password: ''
-  h2:
-    console:
-      enabled: true
+    url: jdbc:postgresql://localhost:5432/books
+    username: books
+    password: books
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,8 +17,10 @@ spring:
       hibernate:
         format_sql: true
         jdbc.time_zone: UTC
+        default_schema: users_schema
   flyway:
     enabled: true
+    schemas: users_schema
   security:
     oauth2:
       resourceserver:

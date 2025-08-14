@@ -13,4 +13,6 @@ public interface BookService {
     Page<BookResponse> list(String author, Pageable pageable);
     BookResponse update(UUID id, Long expectedVersion, BookRequest request);
     void delete(UUID id, Long expectedVersion);
+
+    BookResponse getByIsbn(String isbn);
 }

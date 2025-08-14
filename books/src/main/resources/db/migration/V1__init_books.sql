@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS books (
     price NUMERIC(12,2) NOT NULL,
     published_date DATE,
     status VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     version BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_books_title ON books (title);

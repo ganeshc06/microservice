@@ -61,7 +61,7 @@ spring:
               predicates:
                 - Path=/books/**
               filters:
-                - RewritePath=/books/(?<segment>.*), /api/v1/books/${segment}
+                - RewritePath=/books(?<segment>/?.*), /api/v1/books${segment}
                 - CircuitBreaker=name=bookCB,fallbackUri=forward:/fallback/books
                 - name: Retry
                   args:
@@ -80,7 +80,7 @@ spring:
               predicates:
                 - Path=/users/**
               filters:
-                - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
+                - RewritePath=/users(?<segment>.*), /api/v1/users${segment}
                 - CircuitBreaker=name=userCB,fallbackUri=forward:/fallback/users
                 - name: Retry
                   args:
@@ -99,7 +99,7 @@ spring:
               predicates:
                 - Path=/orders/**
               filters:
-                - RewritePath=/orders/(?<segment>.*), /api/v1/orders/${segment}
+                - RewritePath=/orders(?<segment>.*), /api/v1/orders${segment}
                 - CircuitBreaker=name=orderCB,fallbackUri=forward:/fallback/orders
                 - name: Retry
                   args:

@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         Page<User> page = (name == null || name.isBlank())
                 ? repo.findAll(pageable)
                 : repo.findByNameContainingIgnoreCaseAndStatus(name, UserStatus.ACTIVE, pageable);
-        return (Page<UserResponse>) page.filter(u -> u.getStatus() == UserStatus.ACTIVE).map(this::toResponse);
+        return page.map(this::toResponse);
     }
 
     @Override

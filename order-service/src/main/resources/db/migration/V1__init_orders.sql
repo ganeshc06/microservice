@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS orders (
     unit_price NUMERIC(12,2) NOT NULL,
     total_amount NUMERIC(12,2) NOT NULL,
     status VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     version BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id);

@@ -17,8 +17,11 @@ spring:
       hibernate:
         format_sql: true
         jdbc.time_zone: UTC
+        default_schema: books_schema
+
   flyway:
     enabled: true
+    schemas: books_schema
   security:
     oauth2:
       resourceserver:

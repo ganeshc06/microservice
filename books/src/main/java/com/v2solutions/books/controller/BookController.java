@@ -63,4 +63,10 @@ public class BookController {
                        @RequestHeader(name = "If-Match", required = false) Long expectedVersion) {
         service.delete(id, expectedVersion);
     }
+
+    @GetMapping(params = "isbn")
+    @PreAuthorize("hasAnyAuthority('ROLE_books_read','ROLE_books_write','ROLE_books_admin')")
+    public BookResponse getByIsbn(@RequestParam("isbn") String isbn) {
+        return service.getByIsbn(isbn);
+    }
 }

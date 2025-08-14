@@ -53,8 +53,7 @@ public class BookServiceImpl implements BookService {
                 ? repo.findAll(pageable).map(b -> b)
                 : repo.findByAuthorContainingIgnoreCaseAndStatus(author, BookStatus.ACTIVE, pageable);
 
-        return (Page<BookResponse>) page
-                .filter(b -> b.getStatus() == BookStatus.ACTIVE)
+        return page
                 .map(this::toResponse);
     }
 
@@ -91,6 +90,18 @@ public class BookServiceImpl implements BookService {
                 .filter(book -> book.getStatus() == BookStatus.ACTIVE)
                 .orElseThrow(() -> new NotFoundException("Book not found"));
 
+        if (expectedVersion != null && !expectedVersion.equals(b.getVersion())) {
+            throw new ConflictException("Version mismatch");
+        }
+
+        b.setStatus(BookStatus.DELETED);
+    }
+
+    @Override
+    public BookResponse getByIsbn(String isbn) {
+        Book b = repo.findByIsbnAndStatus(isbn, BookStatus.ACTIVE)
+                .orElseThrow(() -> new NotFoundException("Book not found"));
+        return toResponse(b);
     }
 
     private BookResponse toResponse(Book b) {

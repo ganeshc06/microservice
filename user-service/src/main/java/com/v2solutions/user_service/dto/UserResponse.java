@@ -1,5 +1,6 @@
 package com.v2solutions.user_service.dto;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -10,7 +11,7 @@ public record UserResponse(
         String mobile,
         String address,
         String status,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
         Long version
 ) {}
